@@ -11,12 +11,18 @@ import UIKit
 class ImageViewController: UIViewController, UIScrollViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        if !isRootOfNavigationVC {
+            navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Home", style: .Plain, target: self, action: #selector(self.popToHome))
+        }
+        
         scrollView.addSubview(imageView)
     }
     
     override func viewDidLayoutSubviews() {
         // recalculate the minimum zoom scale when the scrollView's geometry changes
         setMinimumZoomScale()
+        setCurrentZoomScale()
     }
     
 
@@ -26,8 +32,6 @@ class ImageViewController: UIViewController, UIScrollViewDelegate {
                 scrollView.contentSize = imageView.frame.size
                 scrollView.delegate = self
                 scrollView.maximumZoomScale = 1.0
-                setMinimumZoomScale()
-                setCurrentZoomScale()
             }
         }
     }
@@ -43,10 +47,9 @@ class ImageViewController: UIViewController, UIScrollViewDelegate {
         set {
             imageView.image = newValue
             
-            loadingIndicator.stopAnimating()
+            loadingIndicator?.stopAnimating()
             imageView.sizeToFit()
             scrollView?.contentSize = imageView.frame.size
-            print("Image Size: \(newValue!.size)")
             setMinimumZoomScale()
             setCurrentZoomScale()
         }
@@ -95,7 +98,6 @@ class ImageViewController: UIViewController, UIScrollViewDelegate {
             let heightRatio = scrollView.bounds.height / image!.size.height
             
             if widthRatio < 1.0 && heightRatio < 1.0 {
-                //
                 scrollView.zoomScale = (widthRatio > heightRatio) ? widthRatio : heightRatio
             }
         }
@@ -119,14 +121,27 @@ class ImageViewController: UIViewController, UIScrollViewDelegate {
     // the image on the main queue
     private func loadImage() {
         loadingIndicator?.startAnimating()
+        // download the image on a different thread
         if let url = imageURL {
             dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0)) { [weak weakSelf = self] in
-                if let imageData = NSData(contentsOfURL: url) {
-                    dispatch_async(dispatch_get_main_queue()) {
-                        // make sure the url hasn't changed
-                        if weakSelf?.imageURL == url {
-                            weakSelf?.image = UIImage(data: imageData)
-                        }
+                // check the image cache, else fetch it
+                var image: UIImage
+                if let cachedImage = imageCache.objectForKey(url) as? UIImage {
+                    image = cachedImage
+                } else if let imageData = NSData(contentsOfURL: url) {
+                    if let downloadedImage = UIImage(data: imageData) {
+                        image = downloadedImage
+                        imageCache.setObject(image, forKey: url, cost: imageData.length)
+                    } else {
+                        return
+                    }
+                } else {
+                    return
+                }
+                
+                dispatch_async(dispatch_get_main_queue()) {
+                    if weakSelf?.imageURL == url {
+                        weakSelf?.image = image
                     }
                 }
             }

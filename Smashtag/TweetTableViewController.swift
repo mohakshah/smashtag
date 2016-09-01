@@ -27,6 +27,8 @@ class TweetTableViewController: UITableViewController, UITextFieldDelegate {
         }
     }
     
+    var searchFilters = " -filter:retweets"
+    
     let standardUserDefaults = NSUserDefaults.standardUserDefaults()
     
     /*
@@ -68,7 +70,7 @@ class TweetTableViewController: UITableViewController, UITextFieldDelegate {
     // returns a Twitter.Request object constructed from the searchString
     private var twitterRequest: Twitter.Request? {
         if let query = searchString where !query.isEmpty {
-            return Request(search: query + " -filter:retweets", count: 100)
+            return Request(search: query + searchFilters, count: 100)
         }
         
         return nil
@@ -117,6 +119,24 @@ class TweetTableViewController: UITableViewController, UITextFieldDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        if !isRootOfNavigationVC {
+            navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Home", style: .Plain, target: self, action: #selector(self.popToHome))
+        }
+        
+        // make the toolbar transparent
+        if let navVC = navigationController {
+            navVC.toolbar.translucent = true
+            navVC.toolbar.setShadowImage(UIImage(), forToolbarPosition: .Bottom)
+            navVC.toolbar.setBackgroundImage(UIImage(), forToolbarPosition: .Bottom, barMetrics: .Default)
+        
+            // display it
+            navVC.toolbarHidden = false
+        }
+        
+        let cameraButton = UIBarButtonItem(barButtonSystemItem: .Camera, target: self, action: #selector(self.browsePhotos))
+        let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .FlexibleSpace, target: nil, action: nil)
+        toolbarItems = [flexibleSpace, cameraButton]
+        
         if searchString == nil {
             searchString = "#500px"
         }
@@ -125,9 +145,27 @@ class TweetTableViewController: UITableViewController, UITextFieldDelegate {
         tableView.rowHeight = UITableViewAutomaticDimension
     }
     
+    override func didReceiveMemoryWarning() {
+        imageCache.removeAllObjects()
+    }
+    
+    func browsePhotos() {
+        performSegueWithIdentifier("BrowsePhotos", sender: nil)
+    }
+    
+    
     
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        if let cell = sender as? TweetTableViewCell {
+        if segue.identifier == "BrowsePhotos" {
+            if let pcvc = segue.destinationViewController as? PhotoCollectionViewController {
+                var mediaItems = [MediaItem]()
+                for tweet in tweets.flatten() {
+                    mediaItems.appendContentsOf(tweet.media)
+                }
+                
+                pcvc.mediaItems = mediaItems
+            }
+        } else if let cell = sender as? TweetTableViewCell {
             if let tweetDetailVC = segue.destinationViewController as? TweetDetailViewController {
                 // set the model of the detail vc
                 tweetDetailVC.tweet = cell.tweet

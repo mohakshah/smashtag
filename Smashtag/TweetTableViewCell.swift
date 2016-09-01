@@ -63,9 +63,6 @@ class TweetTableViewCell: UITableViewCell {
             
             tweetBody.attributedText = attributedBody
             
-            // indicate pictures
-            tweetBody.text?.appendContentsOf(" 📷(\(tweet.media.count))")
-            
             // set a well-formatted date
             let dateFormatter = NSDateFormatter()
             
@@ -76,19 +73,28 @@ class TweetTableViewCell: UITableViewCell {
             }
             
             // set a background task to fetch the user's display image
-            if let dpURL = tweet.user.profileImageURL {
-                dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0)) {
-                    // fetch the image
-                    if let imageData = NSData(contentsOfURL: dpURL) {
-                        // move to the main queue
-                        dispatch_async(dispatch_get_main_queue()) { [weak weakSelf = self] in
-                            // make sure the cell has not been reused
-                            if weakSelf?.tweet?.user.profileImageURL == dpURL {
-                                weakSelf?.userDP.image = UIImage(data: imageData)
-                            }
+            if let url = tweet.user.profileImageURL {
+                dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0)) { [weak weakSelf = self] in
+                    // check the image cache, else fetch it
+                    var image: UIImage
+                    if let cachedImage = imageCache.objectForKey(url) as? UIImage {
+                        image = cachedImage
+                    } else if let imageData = NSData(contentsOfURL: url) {
+                        if let downloadedImage = UIImage(data: imageData) {
+                            image = downloadedImage
+                            imageCache.setObject(image, forKey: url, cost: imageData.length)
+                        } else {
+                            return
                         }
+                    } else {
+                        return
                     }
                     
+                    dispatch_async(dispatch_get_main_queue()) {
+                        if weakSelf?.tweet?.user.profileImageURL == url {
+                            weakSelf?.userDP.image = image
+                        }
+                    }
                 }
             }
             

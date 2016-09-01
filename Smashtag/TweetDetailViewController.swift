@@ -22,6 +22,11 @@ class TweetDetailViewController: UITableViewController
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        if !isRootOfNavigationVC {
+            navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Home", style: .Plain, target: self, action: #selector(self.popToHome))
+        }
+        
         title = tweet?.user.screenName
         
         // only include sections which have 1 or more cells
@@ -42,6 +47,10 @@ class TweetDetailViewController: UITableViewController
         if tweet?.urls.count > 0 {
             sections.append("URLs")
         }
+    }
+    
+    override func didReceiveMemoryWarning() {
+        imageCache.removeAllObjects()
     }
 
     // MARK: - Table view data source
@@ -149,7 +158,7 @@ class TweetDetailViewController: UITableViewController
         case "URLs" where tweet != nil:
             if let urlString = tweet?.urls[indexPath.row].keyword {
                 if let url = NSURL(string: urlString) {
-                    UIApplication.sharedApplication().openURL(url)
+                    performSegueWithIdentifier("OpenWebPage", sender: url)
                 }
             }
             
@@ -159,14 +168,32 @@ class TweetDetailViewController: UITableViewController
     }
     
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        if let searchString = sender as? String where segue.identifier == "ReSearch" {
+        if var searchString = sender as? String where segue.identifier == "ReSearch" {
             if let tweetTableVC = segue.destinationViewController as? TweetTableViewController {
+                // search for user handles should also include tweets by that user
+                if searchString.hasPrefix("@") {
+                    let userHandle = searchString.substringFromIndex(searchString.startIndex.advancedBy(1))
+                    searchString.appendContentsOf(" OR from:\(userHandle)")
+                }
+                
                 tweetTableVC.searchString = searchString
             }
-        } else if let imageURL = sender as? NSURL where segue.identifier == "showImage" {
-            if let imageView = segue.destinationViewController as? ImageViewController {
-                imageView.imageURL = imageURL
+        } else if let url = sender as? NSURL {
+            switch segue.identifier {
+            case "showImage"?:
+                if let imageView = segue.destinationViewController as? ImageViewController {
+                    imageView.imageURL = url
+                }
+                
+            case "OpenWebPage"?:
+                if let webView = segue.destinationViewController.mainViewController as? WebViewController {
+                    webView.url = url
+                }
+                
+            default:
+                break
             }
+            
         }
     }
 }

@@ -24,6 +24,24 @@ class RecentSearchTableViewController: UITableViewController {
         retrieveQueryList()
     }
     
+    override func viewDidLoad() {
+        self.navigationItem.leftBarButtonItem = self.editButtonItem()
+        
+        // make the toolbar transparent
+        if let navVC = navigationController {
+            navVC.toolbar.translucent = true
+            navVC.toolbar.setShadowImage(UIImage(), forToolbarPosition: .Bottom)
+            navVC.toolbar.setBackgroundImage(UIImage(), forToolbarPosition: .Bottom, barMetrics: .Default)
+            
+            // display it
+            navVC.toolbarHidden = false
+        }
+    }
+    
+    override func didReceiveMemoryWarning() {
+        imageCache.removeAllObjects()
+    }
+    
     private func retrieveQueryList() {
         if let queries = standardUserDefaults.objectForKey(UserDefaultsKeys.recentQueries) as? [String] {
             recentSearches = queries
@@ -69,12 +87,11 @@ class RecentSearchTableViewController: UITableViewController {
     }
     
      // Override to support editing the table view.
-//    override func tableView(tableView: UITableView, commitEditingStyle editingStyle: UITableViewCellEditingStyle, forRowAtIndexPath indexPath: NSIndexPath) {
-//        if editingStyle == .Delete {
-//            // Delete the row from the data source
-//            recentSearches.removeAtIndex(indexPath.row)
-//            saveQueryList()
-//        }
-//    }
-
+    override func tableView(tableView: UITableView, commitEditingStyle editingStyle: UITableViewCellEditingStyle, forRowAtIndexPath indexPath: NSIndexPath) {
+        if editingStyle == .Delete {
+            // Delete the row from the data source
+            recentSearches.removeAtIndex(indexPath.row)
+            saveQueryList()
+        }
+    }
 }
