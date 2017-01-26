@@ -8,6 +8,7 @@
 
 import UIKit
 import Twitter
+import CoreData
 
 class TweetTableViewController: UITableViewController, UITextFieldDelegate {
     
@@ -29,15 +30,13 @@ class TweetTableViewController: UITableViewController, UITextFieldDelegate {
     
     var searchFilters = " -filter:retweets"
     
-    let standardUserDefaults = NSUserDefaults.standardUserDefaults()
-    
     /*
      * searches the standard user defaults for the recent queries and updates the list to include the current
      * query. Also removes any duplicates and trims the list down to the 100 most recent searches
      */
     private func addSearchStringToRecentSearches() {
         if let searchString = self.searchString {
-            if var queries  = standardUserDefaults.objectForKey(UserDefaultsKeys.recentQueries) as? Array<String> {
+            if var queries  = RecentQueries.list {
                 
                 // remove duplicates
                 var i = 0
@@ -52,17 +51,12 @@ class TweetTableViewController: UITableViewController, UITextFieldDelegate {
                 // add the new query
                 queries.insert(searchString, atIndex: 0)
                 
-                // trim to size of <= 100
-                if queries.count > 100 {
-                    queries.removeLast(queries.count - 100)
-                }
-                
                 // save to user defaults
-                standardUserDefaults.setObject(queries, forKey: UserDefaultsKeys.recentQueries)
+                RecentQueries.list = queries
             } else {
                 // since there are no existing queries in the history, just add the current one
                 // as an array containing 1 element
-                standardUserDefaults.setObject([searchString], forKey: UserDefaultsKeys.recentQueries)
+                RecentQueries.list = [searchString]
             }
         }
     }
@@ -84,12 +78,30 @@ class TweetTableViewController: UITableViewController, UITextFieldDelegate {
             lastTwitterRequest = request
             
             request.fetchTweets { [weak weakSelf = self] (newTweets) in
+                // insert results on the main queue
                 dispatch_async(dispatch_get_main_queue()) {
                     if request == weakSelf?.lastTwitterRequest {
                         weakSelf?.tweets.insert(newTweets, atIndex: 0)
                     }
                 }
+                
+                // save tweets on this queue
+                if request == weakSelf?.lastTwitterRequest {
+                    weakSelf?.saveSearchResultsToDb(weakSelf!.searchString!, newTweets: newTweets)
+                }
             }
+        }
+    }
+    
+    private func saveSearchResultsToDb(searchString: String, newTweets: [Tweet]) {
+        if let moc = TweetsDB.moc {
+            moc.performBlock {
+                Search.addTweetsToSearch(searchString, tweets: newTweets, inManagedObjectContext: moc)
+                
+                TweetsDB.printStats()
+            }
+        } else {
+            print("Could not get the moc")
         }
     }
     
@@ -143,10 +155,6 @@ class TweetTableViewController: UITableViewController, UITextFieldDelegate {
         
         tableView.estimatedRowHeight = tableView.rowHeight
         tableView.rowHeight = UITableViewAutomaticDimension
-    }
-    
-    override func didReceiveMemoryWarning() {
-        imageCache.removeAllObjects()
     }
     
     func browsePhotos() {

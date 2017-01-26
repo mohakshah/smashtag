@@ -48,10 +48,6 @@ class TweetDetailViewController: UITableViewController
             sections.append("URLs")
         }
     }
-    
-    override func didReceiveMemoryWarning() {
-        imageCache.removeAllObjects()
-    }
 
     // MARK: - Table view data source
 

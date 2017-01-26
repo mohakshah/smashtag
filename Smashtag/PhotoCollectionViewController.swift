@@ -33,10 +33,6 @@ class PhotoCollectionViewController: UICollectionViewController, UICollectionVie
 
         // Do any additional setup after loading the view.
     }
-    
-    override func didReceiveMemoryWarning() {
-        imageCache.removeAllObjects()
-    }
 
     private var defaultCellDimension = CGFloat(100.0) {
         didSet {

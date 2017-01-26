@@ -17,8 +17,6 @@ class RecentSearchTableViewController: UITableViewController {
         }
     }
     
-    private let standardUserDefaults = NSUserDefaults.standardUserDefaults()
-    
     // refresh query list whenever the view is about to appear
     override func viewWillAppear(animated: Bool) {
         retrieveQueryList()
@@ -38,12 +36,8 @@ class RecentSearchTableViewController: UITableViewController {
         }
     }
     
-    override func didReceiveMemoryWarning() {
-        imageCache.removeAllObjects()
-    }
-    
     private func retrieveQueryList() {
-        if let queries = standardUserDefaults.objectForKey(UserDefaultsKeys.recentQueries) as? [String] {
+        if let queries = RecentQueries.list {
             recentSearches = queries
         } else {
             print("Could not get the queries from user defaults")
@@ -51,7 +45,7 @@ class RecentSearchTableViewController: UITableViewController {
     }
     
     private func saveQueryList() {
-        standardUserDefaults.setObject(recentSearches, forKey: UserDefaultsKeys.recentQueries)
+        RecentQueries.list = recentSearches
     }
 
     // MARK: - Table view data source
@@ -77,14 +71,26 @@ class RecentSearchTableViewController: UITableViewController {
         performSegueWithIdentifier("ReSearch", sender: recentSearches[indexPath.row])
     }
     
+    override func tableView(tableView: UITableView, accessoryButtonTappedForRowWithIndexPath indexPath: NSIndexPath) {
+        performSegueWithIdentifier("Mentions In Search", sender: recentSearches[indexPath.row])
+    }
+    
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
         if let tweetTableVC = segue.destinationViewController as? TweetTableViewController where segue.identifier == "ReSearch" {
             if let searchTerm = sender as? String {
                 // Set the search string of the vc
                 tweetTableVC.searchString = searchTerm
             }
+        } else if let mentionsTableVC = segue.destinationViewController as? MentionsTableViewController
+            where segue.identifier == "Mentions In Search" {
+            if let searchTerm = sender as? String {
+                // initialize this vc
+                mentionsTableVC.searchString = searchTerm
+            }
         }
     }
+    
+    
     
      // Override to support editing the table view.
     override func tableView(tableView: UITableView, commitEditingStyle editingStyle: UITableViewCellEditingStyle, forRowAtIndexPath indexPath: NSIndexPath) {

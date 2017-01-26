@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="10174" systemVersion="15G1004" minimumToolsVersion="Xcode 7.0">
+    <entity name="CDTweet" representedClassName=".CDTweet" syncable="YES">
+        <attribute name="id" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="mentions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="TweetMention" inverseName="tweets" inverseEntity="TweetMention" syncable="YES"/>
+        <relationship name="searches" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Search" inverseName="tweets" inverseEntity="Search" syncable="YES"/>
+    </entity>
+    <entity name="Search" representedClassName=".Search" syncable="YES">
+        <attribute name="term" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="mentions" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="SearchMention" inverseName="search" inverseEntity="SearchMention" syncable="YES"/>
+        <relationship name="tweets" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="CDTweet" inverseName="searches" inverseEntity="CDTweet" syncable="YES"/>
+    </entity>
+    <entity name="SearchMention" representedClassName=".SearchMention" syncable="YES">
+        <attribute name="count" optional="YES" attributeType="Integer 32" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="keyword" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="type" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="search" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Search" inverseName="mentions" inverseEntity="Search" syncable="YES"/>
+    </entity>
+    <entity name="TweetMention" representedClassName=".TweetMention" syncable="YES">
+        <attribute name="keyword" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="tweets" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="CDTweet" inverseName="mentions" inverseEntity="CDTweet" syncable="YES"/>
+    </entity>
+    <elements>
+        <element name="CDTweet" positionX="-2124" positionY="-90" width="128" height="88"/>
+        <element name="Search" positionX="-1919" positionY="-79" width="128" height="88"/>
+        <element name="SearchMention" positionX="-1845" positionY="122" width="128" height="103"/>
+        <element name="TweetMention" positionX="-2313" positionY="143" width="128" height="73"/>
+    </elements>
+</model>
